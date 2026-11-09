@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>25 + 5 Clock</title>
+
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone@7.24.7/babel.min.js"></script>
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            padding: 20px;
+        }
+
+        #root { width: 100%; display: flex; justify-content: center; }
+
+        #clock {
+            width: 100%;
+            max-width: 460px;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+        }
+
+        h1 { font-size: 28px; color: #333; margin-bottom: 22px; }
+
+        .controls { display: flex; justify-content: space-around; margin-bottom: 24px; }
+
+        .control-label { font-size: 17px; color: #555; margin-bottom: 8px; }
+
+        .control-row { display: flex; align-items: center; justify-content: center; gap: 12px; }
+
+        .control-row span { font-size: 28px; font-weight: bold; min-width: 40px; color: #333; }
+
+        .round {
+            width: 38px; height: 38px;
+            border: none; border-radius: 50%;
+            background: #667eea; color: white;
+            font-size: 20px; cursor: pointer;
+        }
+        .round:hover { background: #4c51bf; }
+
+        .timer {
+            background: #2d2d3a;
+            border-radius: 14px;
+            padding: 20px;
+            margin-bottom: 22px;
+            transition: background 0.3s;
+        }
+        .timer.break { background: #1f6f4a; }
+        .timer.warning #time-left { color: #ff6b6b; }
+
+        #timer-label { color: #cfcfe6; font-size: 20px; margin-bottom: 6px; }
+        #time-left { color: white; font-size: 64px; font-weight: bold; font-family: Consolas, monospace; }
+
+        .actions { display: flex; justify-content: center; gap: 14px; }
+
+        .action {
+            padding: 12px 26px;
+            border: none; border-radius: 8px;
+            background: #667eea; color: white;
+            font-size: 16px; cursor: pointer;
+        }
+        .action:hover { background: #4c51bf; }
+        #reset { background: #e5534b; }
+        #reset:hover { background: #c4403a; }
+    </style>
+</head>
+<body>
+
+<div id="root"></div>
+
+<script type="text/babel">
+
+    // Small generated alarm sound (about 1.6 seconds), embedded so no download is needed
+    const BEEP = "data:audio/wav;base64,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3O3Lhj8VHFGb2O3QjUUXGUuU1O7UlEsZF0WN0O3Ym1EcFT+Gy+3coVcfEzmAxuzgqF4jEjR5wOrjrmQnEi9yuujmtGsrEitrtObounIvEidkruPqwHk0EiNeqODsxn85Ex9Xodzty4Y/FRxRm9jt0I1FFxlLlNTu1JRLGRdFjdDt2JtRHBU/hsvt3KFXHxM5gMbs4KheIxI0ecDq465kJxIvcrro5rRrKxIra7Tm6LpyLxInZK7j6sB5NBIjXqjg7MZ/ORMfV6Hc7cuGPxUcUZvY7dCNRRcZS5TU7tSUSxkXRY3Q7dibURwVP4bL7dyhVx8TOYCAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIDG7OCoXiMSNHnA6uOuZCcSL3K66Oa0aysSK2u05ui6ci8SJ2Su4+rAeTQSI16o4OzGfzkTH1eh3O3Lhj8VHFGb2O3QjUUXGUuU1O7UlEsZF0WN0O3Ym1EcFT+Gy+3coVcfEzmAxuzgqF4jEjR5wOrjrmQnEi9yuujmtGsrEitrtObounIvEidkruPqwHk0EiNeqODsxn85Ex9Xodzty4Y/FRxRm9jt0I1FFxlLlNTu1JRLGRdFjdDt2JtRHBU/hsvt3KFXHxM5gMbs4KheIxI0ecDq465kJxIvcrro5rRrKxIra7Tm6LpyLxInZK7j6sB5NBIjXqjg7MZ/ORMfV6Hc7cuGPxUcUZvY7dCNRRcZS5TU7tSUSxkXRY3Q7dibURwVP4bL7dyhVx8TOYDG7OCoXiMSNHnA6uOuZCcSL3K66Oa0aysSK2u05ui6ci8SJ2Su4+rAeTQSI16o4OzGfzkTH1eh3O3Lhj8VHFGb2O3QjUUXGUuU1O7UlEsZF0WN0O3Ym1EcFT+Gy+3coVcfEzmAxuzgqF4jEjR5wOrjrmQnEi9yuujmtGsrEitrtObounIvEidkruPqwHk0EiNeqODsxn85Ex9Xodzty4Y/FRxRm9jt0I1FFxlLlNTu1JRLGRdFjdDt2JtRHBU/hsvt3KFXHxM5gMbs4KheIxI0ecDq465kJxIvcrro5rRrKxIra7Tm6LpyLxInZK7j6sB5NBIjXqjg7MZ/ORMfV6Hc7cuGPxUcUZvY7dCNRRcZS5TU7tSUSxkXRY3Q7dibURwVP4bL7dyhVx8TOYDG7OCoXiMSNHnA6uOuZCcSL3K66Oa0aysSK2u05ui6ci8SJ2Su4+rAeTQSI16o4OzGfzkTH1eh3O3Lhj8VHFGb2O3QjUUXGUuU1O7UlEsZF0WN0O3Ym1EcFT+Gy+3coVcfEzmAxuzgqF4jEjR5wOrjrmQnEi9yuujmtGsrEitrtObounIvEidkruPqwHk0EiNeqODsxn85Ex9Xodzty4Y/FRxRm9jt0I1FFxlLlNTu1JRLGRdFjdDt2JtRHBU/hsvt3KFXHxM5gMbs4KheIxI0ecDq465kJxIvcrro5rRrKxIra7Tm6LpyLxInZK7j6sB5NBIjXqjg7MZ/ORMfV6Hc7cuGPxUcUZvY7dCNRRcZS5TU7tSUSxkXRY3Q7dibURwVP4bL7dyhVx8TOX/G7OCoXiMSNHnA6uOuZCcSL3K66Oa0aysSK2u05ui6ci8SJ2Su4+rAeTQSI16o4OzGfzkTH1eh3O3Lhj8VHFGb2O3QjUUXGUuU1O7UlEsZF0WN0O3Ym1EcFT+Gy+3coVcfEzmAxuzgqF4jEjR5wOrjrmQnEi9yuujmtGsrEitrtObounIvEidkruPqwHk0EiNeqODsxn85Ex9Xodzty4Y/FRxRm9jt0I1FFxlLlNTu1JRLGRdFjdDt2JtRHBU/hsvt3KFXHxM5gMbs4KheIxI0ecDq465kJxIvcrro5rRrKxIra7Tm6LpyLxInZK7j6sB5NBIjXqjg7MZ/ORMfV6Hc7cuGPxUcUZvY7dCNRRcZS5TU7tSUSxkXRY3Q7dibURwVP4bL7dyhVx8TOYDG7OCoXiMSNHnA6uOuZCcSL3K66Oa0aysSK2u05ui6ci8SJ2Su4+rAeTQSI16o4OzGfzkTH1eh3O3Lhj8VHFGb2O3QjUUXGUuU1O7UlEsZF0WN0O3Ym1EcFT+Gy+3coVcfEzmAxuzgqF4jEjR5wOrjrmQnEi9yuujmtGsrEitrtObounIvEidkruPqwHk0EiNeqODsxn85Ex9Xodzty4Y/FRxRm9jt0I1FFxlLlNTu1JRLGRdFjdDt2JtRHBU/hsvt3KFXHxM5gMbs4KheIxI0ecDq465kJxIvcrro5rRrKxIra7Tm6LpyLxInZK7j6sB5NBIjXqjg7MZ/ORMfV6Hc7cuGPxUcUZvY7dCNRRcZS5TU7tSUSxkXRY3Q7dibURwVP4bL7dyhVx8TOX/G7OCoXiMSNHnA6uOuZCcSL3K66Oa0aysSK2u05ui6ci8SJ2Su4+rAeTQSI16o4OzGgDkTH1eh3O3Lhj8VHFGb2O3QjUUXGUuU1O7UlEsZF0WN0O3Ym1EcFT+Gy+3coVcfEzl/xuzgqF4jEjR5wOrjrmQnEi9yuujmtGsrEitrtObounIvEidkruPqwHk0EiNeqODsxoA5Ex9Xodzty4Y/FRxRm9jt0I1FFxlLlNTu1JRLGRdFjdDt2JtRHBU/hsvt3KFXHxM5gMbs4KheIxI0ecDq465kJxIvcrro5rRrKxIra7Tm6LpyLxInZK7j6sB5NBIjXqjg7MZ/ORMfV6Hc7cuGPxUcUZvY7dCNRRcZS5TU7tSUSxkXRY3Q7dibURwVP4bL7dyhVx8TOX/G7OCoXiMSNHnA6uOuZCcSL3K66Oa0aysSK2u05ui6ci8SJ2Su4+rAeTQSI16o4OzGgDkTH1eh3O3Lhj8VHFGb2O3QjUUXGUuU1O7UlEsZF0WN0O3Ym1EcFT+Gy+3coVcfEzl/xuzgqF4jEjR5wOrjrmQnEi9yuujmtGsrEitrtObounIvEidkruPqwHk0EiNeqODsxn85Ex9Xodzty4Y/FRxRm9jt0I1FFxlLlNTu1JRLGRdFjdDt2JtRHBU/hsvt3KFXHxM5gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA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3O3Lhj8VHFGb2O3QjUUXGUuU1O7UlEsZF0WN0O3Ym1EcFT+Gy+3coVcfEzmAxuzgqF4jEjR5wOrjrmQnEi9yuujmtGsrEitrtObounIvEidkruPqwHk0EiNeqODsxn85Ex9Xodzty4Y/FRxRm9jt0I1FFxlLlNTu1JRLGRdFjdDt2JtRHBU/hsvt3KFXHxM5f8bs4KheIxI0ecDq465kJxIvcrro5rRrKxIra7Tm6LpyLxInZK7j6sB5NBIjXqjg7MZ/ORMfV6Hc7cuGPxUcUZvY7dCNRRcZS5TU7tSUSxkXRY3Q7dibURwVP4bL7dyhVx8TOYDG7OCoXiMSNHnA6uOuZCcSL3K66Oa0aysSK2u05ui6ci8SJ2Su4+rAeTQSI16o4OzGfzkTH1eh3O3Lhj8VHFGb2O3QjUUXGUuU1O7UlEsZF0WN0O3Ym1EcFT+Gy+3coVcfEzmAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAxuzgqF4jEjR5wOrjrmQnEi9yuujmtGsrEitrtObounIvEidkruPqwHk0EiNeqODsxoA5Ex9Xodzty4Y/FRxRm9jt0I1FFxlLlNTu1JRLGRdFjdDt2JtRHBU/hsvt3KFXHxM5f8bs4KheIxI0ecDq465kJxIvcrro5rRrKxIra7Tm6LpyLxInZK7j6sB5NBIjXqjg7MaAORMfV6Hc7cuGPxUcUZvY7dCNRRcZS5TU7tSUSxkXRY3Q7dibURwVP4bL7dyhVx8TOYDG7OCoXiMSNHnA6uOuZCcSL3K66Oa0aysSK2u05ui6ci8SJ2Su4+rAeTQSI16o4OzGgDkTH1eh3O3Lhj8VHFGb2O3QjUUXGUuU1O7UlEsZF0WN0O3Ym1EcFT+Gy+3coVcfEzmAxuzgqF4jEjR5wOrjrmQnEi9yuujmtGsrEitrtObounIvEidkruPqwHk0EiNeqODsxoA5Ex9Xodzty4Y/FRxRm9jt0I1FFxlLlNTu1JRLGRdFjdDt2JtRHBU/hsvt3KFXHxM5f8bs4KheIxI0ecDq465kJxIvcrro5rRrKxIra7Tm6LpyLxInZK7j6sB5NBIjXqjg7MZ/ORMfV6Hc7cuGPxUcUZvY7dCNRRcZS5TU7tSUSxkXRY3Q7dibURwVP4bL7dyhVx8TOX/G7OCoXiMSNHnA6uOuZCcSL3K66Oa0aysSK2u05ui6ci8SJ2Su4+rAeTQSI16o4OzGfzkTH1eh3O3Lhj8VHFGb2O3QjUUXGUuU1O7UlEsZF0WN0O3Ym1EcFT+Gy+3coVcfEzl/xuzgqF4jEjR5wOrjrmQnEi9yuujmtGsrEitrtObounIvEidkruPqwHk0EiNeqODsxoA5Ex9Xodzty4Y/FRxRm9jt0I1FFxlLlNTu1JRLGRdFjdDt2JtRHBU/hsvt3KFXHxM5gMbs4KheIxI0ecDq465kJxIvcrro5rRrKxIra7Tm6LpyLxInZK7j6sB5NBIjXqjg7MaAORMfV6Hc7cuGPxUcUZvY7dCNRRcZS5TU7tSUSxkXRY3Q7dibURwVP4bL7dyhVx8TOYDG7OCoXiMSNHnA6uOuZCcSL3K66Oa0aysSK2u05ui6ci8SJ2Su4+rAeTQSI16o4OzGgDkTH1eh3O3Lhj8VHFGb2O3QjUUXGUuU1O7UlEsZF0WN0O3Ym1EcFT+Gy+3coVcfEzl/xuzgqF4jEjR5wOrjrmQnEi9yuujmtGsrEitrtObounIvEidkruPqwHk0EiNeqODsxn85Ex9Xodzty4Y/FRxRm9jt0I1FFxlLlNTu1JRLGRdFjdDt2JtRHBU/hsvt3KFXHxM5f8bs4KheIxI0ecDq465kJxIvcrro5rRrKxIra7Tm6LpyLxInZK7j6sB5NBIjXqjg7MZ/ORMfV6Hc7cuGPxUcUZvY7dCNRRcZS5TU7tSUSxkXRY3Q7dibURwVP4bL7dyhVx8TOX/G7OCoXiMSNHnA6uOuZCcSL3K66Oa0aysSK2u05ui6ci8SJ2Su4+rAeTQSI16o4OzGgDkTH1eh3O3Lhj8VHFGb2O3QjUUXGUuU1O7UlEsZF0WN0O3Ym1EcFT+Gy+3coVcfEzmAxuzgqF4jEjR5wOrjrmQnEi9yuujmtGsrEitrtObounIvEidkruPqwHk0EiNeqODsxoA5Ex9Xodzty4Y/FRxRm9jt0I1FFxlLlNTu1JRLGRdFjdDt2JtRHBU/hsvt3KFXHxM5gMbs4KheIxI0ecDq465kJxIvcrro5rRrKxIra7Tm6LpyLxInZK7j6sB5NBIjXqjg7MaAORMfV6Hc7cuGPxUcUZvY7dCNRRcZS5TU7tSUSxkXRY3Q7dibURwVP4bL7dyhVx8TOX/G7OCoXiMSNHnA6uOuZCcSL3K66Oa0aysSK2u05ui6ci8SJ2Su4+rAeTQSI16o4OzGfzkTH1eh3O3Lhj8VHFGb2O3QjUUXGUuU1O7UlEsZF0WN0O3Ym1EcFT+Gy+3coVcfEzl/xuzgqF4jEjR5wOrjrmQnEi9yuujmtGsrEitrtObounIvEidkruPqwHk0EiNeqODsxn85Ex9Xodzty4Y/FRxRm9jt0I1FFxlLlNTu1JRLGRdFjdDt2JtRHBU/hsvt3KFXHxM5f8bs4KheIxI0ecDq465kJxIvcrro5rRrKxIra7Tm6LpyLxInZK7j6sB5NBIjXqjg7MaAORMfV6Hc7cuGPxUcUZvY7dCNRRcZS5TU7tSUSxkXRY3Q7dibURwVP4bL7dyhVx8TOYDG7OCoXiMSNHnA6uOuZCcSL3K66Oa0aysSK2u05ui6ci8SJ2Su4+rAeTQSI16o4OzGgDkTH1eh3O3Lhj8VHFGb2O3QjUUXGUuU1O7UlEsZF0WN0O3Ym1EcFT+Gy+3coVcfEzmAxuzgqF4jEjR5wOrjrmQnEi9yuujmtGsrEitrtObounIvEidkruPqwHk0EiNeqODsxoA5Ex9Xodzty4Y/FRxRm9jt0I1FFxlLlNTu1JRLGRdFjdDt2JtRHBU/hsvt3KFXHxM5f8bs4KheIxI0ecDq465kJxIvcrro5rRrKxIra7Tm6LpyLxInZK7j6sB5NBIjXqjg7MZ/ORMfV6Hc7cuGPxUcUZvY7dCNRRcZS5TU7tSUSxkXRY3Q7dibURwVP4bL7dyhVx8TOX+AgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgA==";
+
+    function format(totalSeconds) {
+        const m = Math.floor(totalSeconds / 60);
+        const s = totalSeconds % 60;
+        return String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+    }
+
+    function Clock() {
+        const [breakLength, setBreakLength] = React.useState(5);
+        const [sessionLength, setSessionLength] = React.useState(25);
+        const [mode, setMode] = React.useState("Session");
+        const [timeLeft, setTimeLeft] = React.useState(25 * 60);
+        const [running, setRunning] = React.useState(false);
+
+        const beepRef = React.useRef(null);
+
+        // Keep the latest lengths available inside the interval callback
+        const lengths = React.useRef({ breakLength: 5, sessionLength: 25 });
+        lengths.current = { breakLength, sessionLength };
+
+        // Tick once per second while running
+        React.useEffect(() => {
+            if (!running) return;
+            const id = setInterval(() => {
+                setTimeLeft((t) => (t > 0 ? t - 1 : t));
+            }, 1000);
+            return () => clearInterval(id);
+        }, [running]);
+
+        // When 00:00 is reached: beep now, then switch to the other mode on the next second
+        React.useEffect(() => {
+            if (!running || timeLeft !== 0) return;
+            const beep = beepRef.current;
+            if (beep) {
+                beep.currentTime = 0;
+                const p = beep.play();
+                if (p && p.catch) p.catch(() => {});
+            }
+            const id = setTimeout(() => {
+                setMode((m) => {
+                    const next = m === "Session" ? "Break" : "Session";
+                    const len = next === "Break"
+                        ? lengths.current.breakLength
+                        : lengths.current.sessionLength;
+                    setTimeLeft(len * 60);
+                    return next;
+                });
+            }, 1000);
+            return () => clearTimeout(id);
+        }, [timeLeft, running]);
+
+        function change(which, delta) {
+            if (running) return;
+            const current = which === "break" ? breakLength : sessionLength;
+            const next = current + delta;
+            if (next < 1 || next > 60) return;
+            if (which === "break") {
+                setBreakLength(next);
+                if (mode === "Break") setTimeLeft(next * 60);
+            } else {
+                setSessionLength(next);
+                if (mode === "Session") setTimeLeft(next * 60);
+            }
+        }
+
+        function startStop() {
+            setRunning((r) => !r);
+        }
+
+        function reset() {
+            setRunning(false);
+            setBreakLength(5);
+            setSessionLength(25);
+            setMode("Session");
+            setTimeLeft(25 * 60);
+            const beep = beepRef.current;
+            if (beep) {
+                beep.pause();
+                beep.currentTime = 0;
+            }
+        }
+
+        const cls = "timer" + (mode === "Break" ? " break" : "") + (timeLeft < 60 ? " warning" : "");
+
+        return (
+            <div id="clock">
+                <h1>25 + 5 Clock</h1>
+
+                <div className="controls">
+                    <div>
+                        <div id="break-label" className="control-label">Break Length</div>
+                        <div className="control-row">
+                            <button id="break-decrement" className="round" onClick={() => change("break", -1)}>-</button>
+                            <span id="break-length">{breakLength}</span>
+                            <button id="break-increment" className="round" onClick={() => change("break", 1)}>+</button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div id="session-label" className="control-label">Session Length</div>
+                        <div className="control-row">
+                            <button id="session-decrement" className="round" onClick={() => change("session", -1)}>-</button>
+                            <span id="session-length">{sessionLength}</span>
+                            <button id="session-increment" className="round" onClick={() => change("session", 1)}>+</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div className={cls}>
+                    <div id="timer-label">{mode}</div>
+                    <div id="time-left">{format(timeLeft)}</div>
+                </div>
+
+                <div className="actions">
+                    <button id="start_stop" className="action" onClick={startStop}>
+                        {running ? "Pause" : "Start"}
+                    </button>
+                    <button id="reset" className="action" onClick={reset}>Reset</button>
+                </div>
+
+                <audio id="beep" ref={beepRef} src={BEEP} preload="auto"></audio>
+            </div>
+        );
+    }
+
+    ReactDOM.render(<Clock />, document.getElementById("root"));
+
+</script>
+
+<script src="https://cdn.freecodecamp.org/testable-projects-fcc/v1/bundle.js"></script>
+</body>
+</html>
